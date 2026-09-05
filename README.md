@@ -29,6 +29,7 @@ what it built and correct itself without you relaying every result by hand.
 | Path            | What it is                                                       |
 | --------------- | ---------------------------------------------------------------- |
 | `vendor/supex/` | Upstream [supex](https://github.com/darwin/supex), unmodified. The bridge itself. |
+| `bin/`          | Repo-scoped wrappers around the vendored tools. Use these, not `vendor/supex/` directly. |
 | `src/`          | Our own Ruby scripts — the modelling logic specific to this project. |
 | `models/`       | `.skp` files under version control.                              |
 | `scripts/`      | Project automation, including vendor refresh.                    |
@@ -50,23 +51,43 @@ Everything below runs on the Mac, natively — not in a container.
 
 ## Setup
 
-From this repo's root on the Mac:
+Everything runs on the Mac. From this repo's root:
 
 ```bash
-# 1. Launch SketchUp with the bridge extension deployed into it.
-#    Pass a model to open it at the same time.
-./vendor/supex/scripts/launch-sketchup.sh models/your-model.skp
+# 1. Toolchain (once). Upstream pins Python 3.14 and Ruby 3.2.2 via mise.
+brew install mise jq
+mise install
 
-# 2. Register the bridge with Claude Code as an MCP server.
-claude mcp add supex -- "$(pwd)/vendor/supex/mcp"
+# 2. Launch SketchUp with the bridge extension deployed into it.
+./bin/sketchup models/your-model.skp
 
-# 3. Confirm the connection.
-./vendor/supex/supex status
+# 3. In a second terminal, register the bridge with Claude Code.
+claude mcp add supex -- "$(pwd)/bin/mcp"
+
+# 4. Confirm the connection.
+./bin/supex status
 ```
 
-Step 3 should report the socket state and the SketchUp version it is talking to.
+Step 4 should report the socket state and the SketchUp version it is talking to.
 If it can't connect, SketchUp isn't running with the extension loaded — rerun
-step 1 and check SketchUp's own Ruby Console for load errors.
+step 2 and check SketchUp's own Ruby Console for load errors.
+
+### Always use `bin/`, not `vendor/supex/` directly
+
+The three scripts in `bin/` are thin wrappers that set `SUPEX_PROJECT_ROOT` to
+this repo before delegating to the vendored tools. Without it the runtime's path
+policy refuses to touch anything outside `vendor/supex/`, and every
+`eval_ruby_file src/...` or `open_model models/...` fails with error `-32002,
+path access denied`. Calling the vendored scripts directly is the most likely
+cause of that error.
+
+`bin/sketchup` registers the value with `launchctl` rather than exporting it,
+because SketchUp is started through `open`, which does not inherit the shell
+environment. If path errors persist, check what SketchUp actually received:
+
+```bash
+launchctl getenv SUPEX_PROJECT_ROOT
+```
 
 ## Working with it
 

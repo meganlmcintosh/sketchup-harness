@@ -5,6 +5,11 @@ through the supex MCP bridge (`vendor/supex/`).
 
 ## Ground rules
 
+**Run the tools through `bin/`, never `vendor/supex/` directly.** The wrappers
+set `SUPEX_PROJECT_ROOT` to the repo root. Without it the runtime's path policy
+rejects every file operation outside `vendor/supex/` with error `-32002`. If you
+see that error, this is why.
+
 **`vendor/supex/` is read-only.** It is vendored upstream code, pinned to a
 commit recorded in `vendor/.supex-commit`. Never edit it. If something there
 needs to change, the fix belongs upstream or in a patch documented in

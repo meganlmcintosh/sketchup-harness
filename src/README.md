@@ -18,5 +18,5 @@ Conventions:
 Run one from Claude Code with the bridge's `eval_ruby_file` tool, or directly:
 
 ```bash
-./vendor/supex/supex eval-file src/your-script.rb
+./bin/supex eval-file src/your-script.rb
 ```

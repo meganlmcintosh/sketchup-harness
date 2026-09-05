@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Launch SketchUp with the bridge extension, scoped to THIS repo.
+#
+# Why this wrapper exists: the runtime enforces path restrictions inside
+# SketchUp (vendor/supex/runtime/src/supex_runtime/path_policy.rb). File
+# operations -- eval_ruby_file, open_model, save_model, take_screenshot -- are
+# refused with error -32002 for anything outside SUPEX_PROJECT_ROOT. Because
+# supex is vendored under vendor/supex/, its own idea of "project root" is that
+# subdirectory, so src/ and models/ would be off limits.
+#
+# SketchUp is started via `open`, which goes through LaunchServices and does not
+# inherit this shell's environment, so the value is registered with launchd.
+#
+#   ./bin/sketchup models/your-model.skp
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+launchctl setenv SUPEX_PROJECT_ROOT "$ROOT"
+exec "$ROOT/vendor/supex/scripts/launch-sketchup.sh" "$@"

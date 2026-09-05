@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# supex CLI, scoped to this repo. See bin/sketchup for why.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export SUPEX_PROJECT_ROOT="$ROOT"
+exec "$ROOT/vendor/supex/supex" "$@"
