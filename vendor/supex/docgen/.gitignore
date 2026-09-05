@@ -1,0 +1,12 @@
+# Generated documentation output
+generated-sketchup-api-docs/
+
+# Temporary YARD HTML output
+tmp/
+
+# YARD cache
+.yardoc
+
+# Bundler
+.bundle/
+vendor/bundle/

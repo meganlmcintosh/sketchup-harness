@@ -1,0 +1,42 @@
+# frozen_string_literal: true
+
+require 'rake'
+require 'rake/testtask'
+
+# Default task
+task default: %i[test rubocop]
+
+# Test task
+Rake::TestTask.new(:test) do |t|
+  t.libs << 'test'
+  t.libs << 'src'
+  t.test_files = FileList['test/**/*_test.rb']
+  t.warning = false
+end
+
+# RuboCop task
+begin
+  require 'rubocop/rake_task'
+  RuboCop::RakeTask.new
+rescue LoadError
+  puts 'RuboCop not available. Install it with: gem install rubocop'
+end
+
+# YARD documentation task
+begin
+  require 'yard'
+  YARD::Rake::YardocTask.new do |t|
+    t.files = ['src/supex_stdlib/**/*.rb']
+    t.options = ['--output-dir', 'docs/api']
+  end
+rescue LoadError
+  puts 'YARD not available. Install it with: gem install yard'
+end
+
+# Clean task
+desc 'Clean generated files'
+task :clean do
+  require 'fileutils'
+  FileUtils.rm_rf('docs/api')
+  puts 'Cleaned generated files'
+end

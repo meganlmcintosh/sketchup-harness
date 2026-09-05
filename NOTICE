@@ -1,0 +1,12 @@
+sketchup-harness
+Copyright (c) 2026 Megan McIntosh
+
+This product includes software developed as part of the Supex project.
+
+  Supex — SketchUp Automation for Agentic Coding
+  https://github.com/darwin/supex
+  Copyright (c) 2025 Antonín Hildebrand
+  Licensed under the MIT License.
+
+The Supex source is vendored unmodified under vendor/supex/, pinned at commit
+bf503c910551a34ec7439da2d02927b04e7e987b. Its licence text is retained at vendor/supex/LICENSE.

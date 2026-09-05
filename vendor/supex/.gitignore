@@ -1,0 +1,10 @@
+/.idea/
+/inspiration/
+/_adhoc/
+*.iml
+settings.local.json
+.mcp.json
+.direnv/
+/.tmp/
+.DS_Store
+/.code/

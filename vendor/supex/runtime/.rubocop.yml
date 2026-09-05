@@ -1,0 +1,74 @@
+# RuboCop configuration for SketchUp Ruby extension
+
+AllCops:
+  TargetRubyVersion: 3.4
+  NewCops: enable
+  SuggestExtensions: false
+
+# SketchUp specific adjustments
+Style/Documentation:
+  Enabled: false  # SketchUp extensions often don't need full class documentation
+
+# Disable all Metrics cops - they're noisy and not useful for this codebase
+Metrics:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120  # Allow longer lines for hash literals and API calls
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+  SupportedStyles:
+    - single_quotes
+    - double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: single_quotes
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+# SketchUp API mocks need to match real API signatures (x, y, z params)
+Naming/MethodParameterName:
+  MinNameLength: 1
+  Exclude:
+    - 'test/helpers/sketchup_mocks.rb'
+
+# shutdown_server is a command, not a predicate
+Naming/PredicateMethod:
+  Enabled: false
+
+Style/GlobalVars:
+  AllowedVariables:
+    - '$SKETCHUP_CONSOLE'  # SketchUp global console
+    - '$supex_client'  # REPL client instance
+    - '$supex_repl_standalone'  # REPL standalone mode flag
+
+Naming/MethodName:
+  Exclude:
+    - 'test/helpers/sketchup_mocks.rb'
+
+Naming/VariableName:
+  Exclude:
+    - 'test/helpers/sketchup_mocks.rb'
+
+# @mock_model is intentionally named to avoid confusion with the method name
+Naming/MemoizedInstanceVariableName:
+  Exclude:
+    - 'test/helpers/sketchup_mocks.rb'
+
+Style/OptionalBooleanParameter:
+  Exclude:
+    - 'test/helpers/sketchup_mocks.rb'
+
+Lint/FloatComparison:
+  Enabled: false  # Float comparison is intentional in zoom padding
+
+# Allow rescue without explicit error class for SketchUp compatibility
+Style/RescueStandardError:
+  Enabled: false
+
+# Allow duplicate rescue branches for clarity in socket error handling
+Lint/DuplicateBranch:
+  Enabled: false
