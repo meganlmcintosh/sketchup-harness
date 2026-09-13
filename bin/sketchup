@@ -6,6 +6,9 @@
 #   ./bin/sketchup --quit                 # quit it through the bridge (refuses if work is unsaved)
 #   ./bin/sketchup --restart              # quit, then start again in a blank model
 #
+# Each waits its turn while a `bin/plan sketchup` run or another bin/sketchup
+# is driving SketchUp (floorplan/bridge_lock.py).
+#
 # Where the bridge comes from: if bin/install-bridge has put the loader in
 # SketchUp's Plugins folder (pointing at this checkout), SketchUp loads the
 # bridge itself however it is opened. Otherwise this script passes
@@ -57,6 +60,17 @@ if [[ ! -d "$APP" ]]; then
   echo "SketchUp not found at: $APP (set SKETCHUP_APP to override)" >&2
   exit 1
 fi
+
+# One driver at a time: wait while a `bin/plan sketchup` run or another
+# bin/sketchup is driving SketchUp, then hold the lock until this script exits,
+# so SketchUp is never quit or restarted in the middle of someone's import.
+# macOS has no flock command, so the helper locks the descriptor this shell
+# opens; the lock stays with the shell after the helper exits. See
+# floorplan/bridge_lock.py.
+harness_python() { PATH="$HOME/.local/bin:$PATH" PYTHONPATH="$ROOT" uv run --quiet --project "$ROOT" python "$@"; }
+LOCK="$(harness_python -m floorplan.bridge_lock path)"
+exec 9<>"$LOCK"
+harness_python -m floorplan.bridge_lock take --fd 9 --pid $$ --what "bin/sketchup${1:+ $1}" || exit 1
 
 VERSION_DIR="$(basename "$(dirname "$APP")")"
 running() { ps -axo command | grep -F "$VERSION_DIR/SketchUp.app/Contents/MacOS/SketchUp" | grep -qv grep; }

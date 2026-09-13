@@ -156,6 +156,14 @@ removed, and each storey's flat plan. An import is three undo steps (the
 removal, the DXF imports, the repairs) because SketchUp's importer closes
 Ruby operations; if a run fails part way, its own entities are erased again.
 
+Several sessions can share one SketchUp, from this folder or its worktrees.
+`bin/plan sketchup` and `bin/sketchup` take turns: one that finds SketchUp
+busy says which run has it and waits, up to 15 minutes, rather than switching
+models in the middle of that run. Taking turns doesn't bring windows forward,
+so a run for a project whose model is open behind another window still asks
+you to bring that window to the front. Two sessions on the same project in the
+same folder overwrite each other's `out/`.
+
 Walls can run at any angle; roofs cover L-, T- and U-shaped plans at any
 rotation. Plans are concept designs: sizes and stair checks follow common
 Australian practice, not a certifier's review.

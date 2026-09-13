@@ -9,6 +9,10 @@ and a report is only trusted if it echoes the run's nonce:
    creating a model only takes effect after the Ruby call returns, so this is
    polled until SketchUp has switched.
 2. src/floorplan_import.rb imports, repairs, annotates, saves and renders.
+
+The run holds the SketchUp lock (bridge_lock.py) from its first call to its
+last, so a run from another session waits its turn instead of switching the
+active model in between.
 """
 
 import json
@@ -18,6 +22,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from . import bridge_lock
 from .build import BuildResult
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +39,11 @@ class SketchUpError(RuntimeError):
 
 
 def push(result: BuildResult, save: bool = True, views: bool = True) -> dict:
+    with bridge_lock.held(f"bin/plan sketchup {result.project_id}"):
+        return _push(result, save, views)
+
+
+def _push(result: BuildResult, save: bool, views: bool) -> dict:
     nonce = secrets.token_hex(4)
     job = {
         "nonce": nonce,

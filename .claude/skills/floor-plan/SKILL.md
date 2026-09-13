@@ -105,6 +105,11 @@ Connected; start it with `./bin/sketchup` if not).
 ./bin/plan sketchup projects/<name>
 ```
 
+If it says SketchUp is busy with another run, another session is using
+SketchUp: the command waits its turn (up to 15 minutes) and carries on by
+itself. Give it a long timeout, and never quit or restart SketchUp to get
+past the wait.
+
 Then read every `projects/<name>/out/views/*.png`: the 3D view, each
 storey's cutaway, each flat plan. Statistics don't prove it looks right, so
 look. If the import says the active model isn't the project's, ask the user

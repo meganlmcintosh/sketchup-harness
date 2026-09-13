@@ -106,6 +106,14 @@ the user says otherwise.
 - Each `bin/plan sketchup` run writes its own job file and stub under `.tmp/`
   and checks the report's nonce; the bridge's retry is disabled because a
   re-sent import would run twice.
+- SketchUp runs bridge calls one at a time, but a run is several calls, and
+  another session's calls could land between them. So `bin/plan sketchup` and
+  `bin/sketchup` hold a lock while they drive SketchUp; a second one waits and
+  says who has it (`floorplan/bridge_lock.py`). It's a flock on
+  `~/Library/Caches/sketchup-harness/bridge-<port>.lock`, outside the repo
+  because worktrees in `.claude/worktrees/` reach the same bridge but each
+  has its own `.tmp/`. Never delete or replace that file: a new file at the
+  same path is a new lock. MCP tool calls and hand-run `bin/supex` don't take it.
 
 ## SketchUp API notes
 
