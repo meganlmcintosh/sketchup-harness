@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # supex CLI for this repo. The runtime's path policy is decided by the
 # environment SketchUp was launched with (see bin/sketchup), not by this
-# shell; the export below only matters if a future driver reads it.
+# shell; the SUPEX_PROJECT_ROOT export only matters if a future driver reads it.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 export SUPEX_PROJECT_ROOT="$ROOT"
 # uv installs to ~/.local/bin, which may not be on PATH.
 export PATH="$HOME/.local/bin:$PATH"
+# Run the driver in supex-env/, the same environment as bin/mcp (see there).
+export UV_PROJECT="$ROOT/supex-env"
 exec "$ROOT/vendor/supex/supex" "$@"

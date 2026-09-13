@@ -15,4 +15,9 @@ export SUPEX_PROJECT_ROOT="$ROOT"
 # uv installs to ~/.local/bin, and MCP hosts often start servers without the
 # login shell's PATH.
 export PATH="$HOME/.local/bin:$PATH"
+# Upstream's wrapper runs a plain `uv run` in vendor/supex/driver, which would
+# install mcp 2, and this driver needs mcp 1. UV_PROJECT points it at
+# supex-env/ instead: the same driver, with its dependencies locked. See
+# "Python dependencies" in VENDOR.md.
+export UV_PROJECT="$ROOT/supex-env"
 exec "$ROOT/vendor/supex/mcp" "$@"

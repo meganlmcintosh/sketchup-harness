@@ -47,6 +47,7 @@ path (model stats, screenshots) lets Claude check its own work.
 | `tests/` | pytest suite, including watertightness checks on all generated solids |
 | `bin/` | Entry points: `plan`, `sketchup`, `supex`, `mcp`, `install-bridge`, `rubocop` |
 | `vendor/supex/` | Upstream supex, unmodified (see `VENDOR.md`) |
+| `supex-env/` | The locked Python environment `bin/supex` and `bin/mcp` run the vendored driver in |
 | `models/` | Hand-made `.skp` files under version control |
 
 ## Requirements
@@ -67,7 +68,7 @@ From this repo's root:
 # 1. uv (user-level, leaves your shell config alone), then Python and packages.
 curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
 ~/.local/bin/uv sync
-~/.local/bin/uv sync --project vendor/supex/driver
+~/.local/bin/uv sync --project supex-env
 
 # 2. Optional: start the bridge however SketchUp is opened (Dock, Finder...).
 ./bin/install-bridge
@@ -98,6 +99,10 @@ repo.
 **MCP tools for Claude Code.** `.mcp.json` registers the supex MCP server
 (`bin/mcp`) for this project; Claude Code asks to approve it on the next
 session. The `bin/plan sketchup` workflow uses the CLI and works without it.
+The server needs mcp 1: the vendored supex 0.2.0 is written for it, and with
+mcp 2 the server exits at startup. `supex-env/` keeps mcp below 2, which is why
+`bin/mcp` works and running `vendor/supex/mcp` directly does not (see
+`VENDOR.md`).
 
 ### Path errors (`-32002`)
 
