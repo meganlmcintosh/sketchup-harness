@@ -44,6 +44,7 @@ path (model stats, screenshots) lets Claude check its own work.
 | `plugin/` | The SketchUp loader installed by `bin/install-bridge` |
 | `docs/plan-spec.md` | The `plan.yaml` reference |
 | `.claude/skills/floor-plan/` | How Claude turns briefs, surveys and images into plans |
+| `.claude/skills/sketchup-*/` | Slash commands that redraw a house and show its plans and 3D views |
 | `tests/` | pytest suite, including watertightness checks on all generated solids |
 | `bin/` | Entry points: `plan`, `sketchup`, `supex`, `mcp`, `install-bridge`, `rubocop` |
 | `vendor/supex/` | Upstream supex, unmodified (see `VENDOR.md`) |
@@ -146,6 +147,19 @@ commands in `.claude/settings.local.json` (per machine, not committed):
   }
 }
 ```
+
+When they start a session, leave the **worktree** option next to the branch
+name off, so it works in this folder: a worktree starts from a commit, which
+may not have the harness or its latest changes. Typing `/` lists the
+commands; each takes an optional house name (`/sketchup-exterior smith-house`):
+
+| Command | What it does |
+| --- | --- |
+| `/floor-plan` | Design or change a plan (describing the house does the same) |
+| `/sketchup-floor-plan` | Redraw and show the floor plan sheets, with PDFs to print; no SketchUp needed |
+| `/sketchup-exterior` | Redraw, open in SketchUp and show the outside in 3D |
+| `/sketchup-interior` | Redraw, open in SketchUp and show inside each floor, roof off |
+| `/sketchup-all` | Redraw and show everything: floor plans, roof plan, and the 3D views outside and in |
 
 Re-running `bin/plan sketchup` replaces that project's previous import and
 saves the model to `projects/<name>/out/<name>.skp`. Anything you draw by

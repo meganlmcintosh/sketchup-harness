@@ -16,7 +16,10 @@ plan.yaml ──floorplan (ezdxf)──▶ out/*.dxf, *.pdf, *.png, sketchup.jso
 
 For plan work (briefs, surveys, photos or PDFs of plans), follow the
 `floor-plan` skill (`.claude/skills/floor-plan/SKILL.md`). The format is in
-`docs/plan-spec.md`; `./bin/plan reference` lists what's available.
+`docs/plan-spec.md`; `./bin/plan reference` lists what's available. The
+`sketchup-*` slash commands show the results; they find sheets, views and
+scene tabs by name (`.claude/skills/sketchup-all/steps.md`), so update them
+if the import's scenes or `out/` file names change.
 
 ## When the person is designing a house, not the harness
 
