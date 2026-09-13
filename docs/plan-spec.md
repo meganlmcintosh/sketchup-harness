@@ -231,6 +231,7 @@ past the end of its wall, or out of its room.
 | `kitchen_island` | `length` 2400, `depth` 1000, `stools` 3, `sink`, `cooktop` | stools on the front (+430) |
 | `fridge` | | 900 wide space |
 | `pantry` | `length` 600 | 600 deep, full height |
+| `cupboard` | `length` 900, `depth` 600 | full-height storage (linen, laundry, garage, built-ins) |
 | `toilet` | | 380 x 690 |
 | `vanity` | `length` 900, `basins` 1 | 460 deep, wall hung, mirror |
 | `shower` | `width` 900, `depth` 900 | tray, front glass screen |

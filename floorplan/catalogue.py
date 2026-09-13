@@ -325,6 +325,14 @@ def pantry(length: float = 600, **_) -> Design:
                   symbols, fixture=True)  # fmt: skip
 
 
+def cupboard(length: float = 900, depth: float = 600, **_) -> Design:
+    h = 2250
+    symbols = [_rect(-length / 2, 0, length / 2, depth), _line((-length / 2, 0), (length / 2, depth)),
+               _line((-length / 2, depth), (length / 2, 0))]  # fmt: skip
+    return Design(f"Cupboard {length:.0f}", length, depth, h,
+                  _box(-length / 2, length / 2, 0, depth, 0, h, "joinery_white"), symbols, fixture=True)  # fmt: skip
+
+
 # --- bathroom and laundry -----------------------------------------------------------
 
 
@@ -427,6 +435,7 @@ CATALOGUE: dict[str, Entry] = {
                             "overhang and stools on the front"),  # fmt: skip
     "fridge": Entry(fridge, {}, "900 wide fridge space"),
     "pantry": Entry(pantry, {"length": 600}, "tall cabinet"),
+    "cupboard": Entry(cupboard, {"length": 900, "depth": 600}, "full-height storage: linen, garage, built-ins"),
     "toilet": Entry(toilet, {}, "wall-faced pan with cistern"),
     "vanity": Entry(vanity, {"length": 900, "basins": 1}, "wall-hung, with mirror"),
     "shower": Entry(shower, {"width": 900, "depth": 900}, "tray with front glass screen"),
