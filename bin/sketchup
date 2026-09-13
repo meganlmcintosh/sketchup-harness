@@ -3,6 +3,8 @@
 #
 #   ./bin/sketchup                        # start SketchUp in a blank model, wait for the bridge
 #   ./bin/sketchup models/your-model.skp  # ...or in a model of your choice
+#   ./bin/sketchup --quit                 # quit it through the bridge (refuses if work is unsaved)
+#   ./bin/sketchup --restart              # quit, then start again in a blank model
 #
 # Where the bridge comes from: if bin/install-bridge has put the loader in
 # SketchUp's Plugins folder (pointing at this checkout), SketchUp loads the
@@ -56,6 +58,46 @@ if [[ ! -d "$APP" ]]; then
   exit 1
 fi
 
+VERSION_DIR="$(basename "$(dirname "$APP")")"
+running() { ps -axo command | grep -F "$VERSION_DIR/SketchUp.app/Contents/MacOS/SketchUp" | grep -qv grep; }
+
+# Quit through the bridge: src/floorplan_quit.rb discards changes to the
+# blank copy only, and refuses when another model has unsaved changes.
+quit_sketchup() {
+  if ! running; then
+    echo "$VERSION_DIR is not running."
+    return 0
+  fi
+  if ! bridge_up; then
+    echo "$VERSION_DIR is running without the bridge; quit it from SketchUp itself." >&2
+    return 1
+  fi
+  local answer
+  answer="$(SUPEX_TIMEOUT=15 SUPEX_RETRIES=0 "$ROOT/bin/supex" eval-file --raw "$ROOT/src/floorplan_quit.rb" 2>/dev/null || true)"
+  if [[ "$answer" == *'"refused'* ]]; then
+    echo "Not quitting: ${answer#*refused}" >&2
+    return 1
+  fi
+  local i
+  for ((i = 0; i < 30; i++)); do
+    running || { echo "$VERSION_DIR quit."; return 0; }
+    sleep 1
+  done
+  echo "$VERSION_DIR is still running after 30s; it is probably asking about unsaved changes. Look at it." >&2
+  return 1
+}
+
+case "${1:-}" in
+  --quit)
+    quit_sketchup
+    exit $?
+    ;;
+  --restart)
+    quit_sketchup || exit 1
+    shift
+    ;;
+esac
+
 if bridge_up; then
   if bridge_is_ours; then
     echo "Bridge already listening on port $PORT."
@@ -68,8 +110,7 @@ fi
 
 # Any copy of the same version shares a bundle ID, so `open` would just bring
 # the running one forward and silently skip the bridge.
-VERSION_DIR="$(basename "$(dirname "$APP")")"
-if ps -axo command | grep -F "$VERSION_DIR/SketchUp.app/Contents/MacOS/SketchUp" | grep -qv grep; then
+if running; then
   echo "$VERSION_DIR is running without the bridge. Save and quit it, then rerun." >&2
   echo "(If bin/install-bridge is installed, the bridge starts once a model window is open.)" >&2
   exit 1

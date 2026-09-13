@@ -53,24 +53,28 @@ module FloorplanImport
 
     project_id = manifest.fetch('project_id')
     model = checked_model(job.fetch('skp'))
+    fresh = FloorplanTarget.untouched?(model) # decided before anything below marks the model modified
     report = { nonce: job['nonce'], project: manifest['project'], skp: job['skp'], warnings: [] }
 
     model.active_path = nil # our definitions can't be removed while one is open for editing
     model.selection.clear
     model.active_layer = model.layers[0] # new entities go to Untagged, whatever tag the user had active
-    layers_before = model.layers.to_a
-    materials_before = model.materials.to_a
 
     model.start_operation("Floor plan: remove #{manifest['project']}", true)
     begin
       use_millimetres(model)
-      clear_template_figure(model)
+      clear_template_figure(model) if fresh
       report[:removed] = remove_previous(model, project_id, manifest)
       model.commit_operation
     rescue StandardError
       model.abort_operation
       raise
     end
+
+    # Taken after the removals: a list holding a since-deleted tag or
+    # material raises "reference to deleted" when compared against.
+    layers_before = model.layers.to_a
+    materials_before = model.materials.to_a
 
     # The imports close any open operation, so they run on their own.
     structure = import_dxf(model, manifest['model']['dxf'], project_id, 'model')
@@ -91,9 +95,14 @@ module FloorplanImport
       report[:scenes] = build_scenes(model, manifest, project_id, job)
       model.commit_operation
     rescue StandardError
-      model.abort_operation
+      # Committed rather than aborted: an abort leaves the names given so far
+      # registered while their definitions vanish, and the next import comes
+      # out as "Robe #2". Removing what was made is clean either way.
+      model.commit_operation
       model.start_operation('Floor plan: undo failed import', true)
       remove_previous(model, project_id, manifest)
+      (model.materials.to_a - materials_before).each { |material| model.materials.remove(material) }
+      (model.layers.to_a - layers_before).each { |layer| model.layers.remove(layer) }
       model.commit_operation
       raise
     end
@@ -135,12 +144,14 @@ module FloorplanImport
 
   # A new model (bin/sketchup's blank template copy, or an untitled one)
   # comes with the template's scale figure; it would be saved into the
-  # project and stand in every plan view.
+  # project and stand in every plan view. Its materials go with it.
   def clear_template_figure(model)
-    return unless FloorplanTarget.untouched?(model)
-
     figures = model.entities.grep(Sketchup::ComponentInstance).reject { |e| e.get_attribute(DICT, 'project') }
-    model.entities.erase_entities(figures) unless figures.empty?
+    return if figures.empty?
+
+    model.entities.erase_entities(figures)
+    model.definitions.purge_unused
+    model.materials.purge_unused
   end
 
   def ours?(entity, project_id)
@@ -164,8 +175,13 @@ module FloorplanImport
       unused = model.definitions.select { |d| d.instances.empty? && (ours?(d, project_id) || names.include?(d.name)) }
       break if unused.empty?
 
-      unused.each { |d| model.definitions.remove(d) }
-      removed_definitions += unused.size
+      unused.each do |d|
+        # A removed definition keeps its name reserved while the undo stack
+        # holds it, and the next import's same-named definition would come
+        # out as "Robe #1". Give it a throwaway name on the way out.
+        d.name = "removed #{Time.now.to_i} #{removed_definitions += 1}"
+        model.definitions.remove(d)
+      end
     end
 
     # Scenes carry the project attribute; earlier imports only recorded their

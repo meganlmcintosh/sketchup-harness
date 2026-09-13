@@ -82,7 +82,10 @@ curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
 `bin/sketchup` launches `/Applications/SketchUp 2026` explicitly
 (`SKETCHUP_APP` overrides it) because `open -a SketchUp` picks an arbitrary copy
 when several are installed. It opens a copy of the blank template because the
-bridge can't start while the Welcome window is showing.
+bridge can't start while the Welcome window is showing. `./bin/sketchup --quit`
+quits through the bridge and `--restart` relaunches; both discard changes to
+that blank copy only and refuse if the active model has unsaved changes, so a
+"Save changes?" dialog never blocks SketchUp with nobody to answer it.
 
 **About `bin/install-bridge`.** It copies `plugin/sketchup_harness_bridge.rb`
 into SketchUp's Plugins folder, with a sidecar file holding this repo's path,
