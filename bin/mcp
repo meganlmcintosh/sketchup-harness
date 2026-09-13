@@ -4,6 +4,12 @@
 # bin/install-bridge) for the tools to connect; that launch, not this
 # script's environment, decides the runtime's path policy.
 set -euo pipefail
+# Claude Code cloud sessions run on Linux with no SketchUp. Exit at startup
+# rather than install the driver for tools that could only fail.
+if [[ "${CLAUDE_CODE_REMOTE:-}" == "true" ]]; then
+  echo "No SketchUp in a Claude Code cloud session; the supex tools work only on the Mac." >&2
+  exit 1
+fi
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 export SUPEX_PROJECT_ROOT="$ROOT"
 # uv installs to ~/.local/bin, and MCP hosts often start servers without the

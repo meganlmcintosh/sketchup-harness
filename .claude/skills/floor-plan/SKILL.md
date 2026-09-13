@@ -91,6 +91,10 @@ names are off), dimensions that don't add up.
 
 ## 5. SketchUp
 
+In a cloud session (`CLAUDE_CODE_REMOTE=true`) there is no SketchUp: skip
+this step, and say in the report that the import still has to run on the
+Mac.
+
 SketchUp must be running with the bridge (`./bin/supex status` says
 Connected; start it with `./bin/sketchup` if not).
 

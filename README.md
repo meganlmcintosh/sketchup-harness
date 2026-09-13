@@ -145,6 +145,26 @@ Walls can run at any angle; roofs cover L-, T- and U-shaped plans at any
 rotation. Plans are concept designs: sizes and stair checks follow common
 Australian practice, not a certifier's review.
 
+## Away from the Mac
+
+SketchUp runs only on the Mac, and that decides where each step can happen.
+
+- **Remote Control** keeps the session on the Mac and lets you steer it from
+  claude.ai or the Claude app. Everything works, SketchUp included, as long
+  as the Mac stays awake with SketchUp open.
+- **Cloud sessions** (Claude Code on the web, or the desktop app's Cloud
+  environment) work on a clone of the GitHub repository in a Linux
+  container. A SessionStart hook (`.claude/hooks/cloud-setup.sh`) installs
+  uv, Python and the packages, so plans can be written, checked and built
+  there, and the tests run. There is no SketchUp, so the session pushes its
+  branch and the import waits for the Mac: pull that branch, then run
+  `./bin/plan sketchup`.
+
+To let cloud sessions see this repository and nothing else, install the
+[Claude GitHub App](https://github.com/apps/claude) with **Only select
+repositories**. Plans kept in a separate private repository can be added to
+the same session if the app is given that repository too.
+
 ## Development
 
 ```bash

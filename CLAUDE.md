@@ -103,6 +103,28 @@ the user says otherwise.
 - `Geom::Point3d` and friends are mutable and are frequently aliased. Duplicate
   before mutating unless you mean to affect the original.
 
+## Cloud sessions
+
+Claude Code on the web runs a clone of this repo in a Linux container
+(`CLAUDE_CODE_REMOTE=true`), with no SketchUp and no rv Ruby. The
+SessionStart hook (`.claude/hooks/cloud-setup.sh`) installs uv, Python and
+the packages, so `bin/plan check` and `build`, pytest and ruff work there;
+`bin/sketchup`, `bin/supex`, `bin/plan sketchup` and the supex MCP server
+don't (`bin/mcp` exits straight away).
+
+- Go as far as `bin/plan build` and verify with the PNG sheets.
+- Commit and push the branch, and say in the report that the SketchUp import
+  and its `out/views/*.png` check still need a session on the Mac.
+- `bin/rubocop` expects rv's Ruby. If you changed Ruby, install RuboCop 1.82.1
+  (with rubocop-ast 1.48.0) into a gem directory with `gem`, and run
+  `bin/rubocop` with `RUBOCOP_GEM_HOME` set to that directory and
+  `RUBOCOP_RUBY_HOME` to the system Ruby's prefix; otherwise report the Ruby
+  as unlinted.
+- Don't try to reach SketchUp from the cloud, for instance by tunnelling to
+  the bridge's port: the bridge runs whatever Ruby it is sent.
+- A session has only what's been pushed. Plans kept in another repository
+  can be added to the same session; pass `bin/plan` the project's path.
+
 ## Before you finish
 
 - `./bin/plan check` passes for any plan you touched, with no warnings you
