@@ -1,12 +1,14 @@
 # plan.yaml reference
 
-A project is a folder `projects/<name>/` holding one `plan.yaml`. Everything the
+A project is a folder holding one `plan.yaml`: `projects/<name>/` here, or any
+folder passed by path (a private repo for your own house, say). Everything the
 harness produces is generated from that file, so edit the file, never the
 outputs. `./bin/plan reference` prints the live list of wall types, openings,
 finishes and catalogue items, which is authoritative if this page drifts.
 
 ```bash
 ./bin/plan new smith-house                   # start from the template
+./bin/plan new ~/plans/smith-house           # ...or outside this repo; pass that path below
 ./bin/plan check projects/smith-house        # validate, list rooms and areas
 ./bin/plan build projects/smith-house        # DXFs, PDF + PNG sheets, manifest
 ./bin/plan build projects/smith-house --grid # sheets with a 1 m grid (for tracing)

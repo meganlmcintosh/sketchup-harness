@@ -116,13 +116,15 @@ launchctl getenv SUPEX_PROJECT_ROOT
 
 ## Using it
 
-Talk to Claude Code: "draw a single-storey three-bedroom house for a 15 m lot,
+Talk to Claude Code, in a terminal or in the Claude desktop app's Code tab with
+this folder open: "draw a single-storey three-bedroom house for a 15 m lot,
 living to the north", "trace this plan" (with a photo), "the kitchen is
 4.2 by 3.6", "add a double garage with a skillion roof", "furnish it". Claude
 writes `plan.yaml` and runs the commands. You can run them yourself too:
 
 ```bash
 ./bin/plan new smith-house                  # start a project
+./bin/plan new ~/plans/smith-house          # ...or outside this repo; pass that path below
 ./bin/plan check projects/smith-house       # validate; rooms and areas
 ./bin/plan build projects/smith-house       # DXFs, PDF and PNG sheets
 ./bin/plan sketchup projects/smith-house    # build and import into SketchUp
@@ -131,6 +133,19 @@ writes `plan.yaml` and runs the commands. You can run them yourself too:
 
 Try the example: `./bin/plan sketchup projects/example-townhouse`, a furnished
 two-storey townhouse with a stair and a hip roof.
+
+**For someone who isn't a developer**, set it up once on their Mac login, then
+have them open this folder in the desktop app's Code tab and describe the house.
+So they aren't asked to approve every build, allow just the harness's own
+commands in `.claude/settings.local.json` (per machine, not committed):
+
+```json
+{
+  "permissions": {
+    "allow": ["Bash(./bin/plan *)", "Bash(./bin/sketchup *)", "Bash(./bin/supex status)"]
+  }
+}
+```
 
 Re-running `bin/plan sketchup` replaces that project's previous import and
 saves the model to `projects/<name>/out/<name>.skp`. Anything you draw by

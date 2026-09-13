@@ -18,6 +18,20 @@ For plan work (briefs, surveys, photos or PDFs of plans), follow the
 `floor-plan` skill (`.claude/skills/floor-plan/SKILL.md`). The format is in
 `docs/plan-spec.md`; `./bin/plan reference` lists what's available.
 
+## When the person is designing a house, not the harness
+
+Some people use this repo from the Claude desktop app only to plan a house,
+without knowing the code. When the conversation is about the house rather than
+the harness:
+
+- Run the commands yourself. Never ask them to open a terminal or edit YAML,
+  and before a step that will ask for their approval, say in plain words what
+  it does.
+- Talk about rooms, sizes, light and flow, not files and commands. Show the
+  result: the plan sheet PNGs, then the SketchUp views.
+- Ask design questions a few at a time, each with a sensible default they can
+  simply accept.
+
 ## Ground rules
 
 **Run the tools through `bin/`, never `vendor/supex/` directly.** The wrappers

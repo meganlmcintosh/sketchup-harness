@@ -12,8 +12,11 @@ Australian conventions and metric units unless told otherwise.
 
 ## 1. Set up
 
-- New project: `./bin/plan new <kebab-name>`. Put what you were given (brief
-  text, photos, PDFs, survey notes) in `projects/<name>/sources/`.
+- New project: `./bin/plan new <kebab-name>` makes `projects/<name>/`. If the
+  user keeps their plans somewhere else (a private repo, say), pass a path
+  instead, `./bin/plan new <folder>/<kebab-name>`, and use that path in every
+  command. Put what you were given (brief text, photos, PDFs, survey notes) in
+  the project's `sources/`.
 - Changing an existing plan: read its `plan.yaml` first and keep its origin,
   ids and names stable, so the user's references ("Bed 2") stay valid.
 

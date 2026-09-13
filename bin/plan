@@ -6,6 +6,7 @@
 #   ./bin/plan build    projects/example-townhouse
 #   ./bin/plan sketchup projects/example-townhouse   # needs ./bin/sketchup running
 #   ./bin/plan new      smith-house
+#   ./bin/plan new      ~/plans/smith-house          # a project outside this repo
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # uv installs to ~/.local/bin, which may not be on PATH.

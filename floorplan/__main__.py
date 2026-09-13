@@ -3,7 +3,7 @@
     ./bin/plan check    projects/<name>   validate and summarise, write nothing
     ./bin/plan build    projects/<name>   write DXFs, PDF/PNG sheets and the manifest
     ./bin/plan sketchup projects/<name>   build, then import into the running SketchUp
-    ./bin/plan new      <name>            start a project from the template
+    ./bin/plan new      <name|path>       start a project from the template (a bare name goes under projects/)
     ./bin/plan reference                  list wall types, openings, finishes and catalogue items
 """
 
@@ -118,11 +118,17 @@ def cmd_reference(_args) -> None:
 
 
 def cmd_new(args) -> None:
-    project = ROOT / "projects" / args.name
+    # A bare name goes under projects/. A path puts the project anywhere else,
+    # such as a private repo, so someone's own house stays out of this one.
+    is_path = "/" in args.name or args.name.startswith("~")
+    project = Path(args.name).expanduser() if is_path else ROOT / "projects" / args.name
     if project.exists():
         sys.exit(f"{_rel(project)} already exists")
+    if not project.parent.is_dir():
+        sys.exit(f"{_rel(project.parent)} doesn't exist; create it first or check the path")
     (project / "sources").mkdir(parents=True)
-    (project / "plan.yaml").write_text(TEMPLATE.read_text().replace("{{name}}", args.name.replace("-", " ").title()))
+    title = project.name.replace("-", " ").title()
+    (project / "plan.yaml").write_text(TEMPLATE.read_text().replace("{{name}}", title))
     print(f"Created {_rel(project / 'plan.yaml')}; put briefs, photos and PDFs in {_rel(project / 'sources')}")
 
 
@@ -144,7 +150,7 @@ def main(argv: list[str] | None = None) -> None:
             p.add_argument("--no-save", action="store_true", help="don't save the .skp")
             p.add_argument("--no-views", action="store_true", help="don't write scene PNGs")
     p = sub.add_parser("new", help="start a project from the template")
-    p.add_argument("name", help="folder name under projects/, e.g. smith-house")
+    p.add_argument("name", help="folder name under projects/ (smith-house), or a path to create it elsewhere")
     p.set_defaults(func=cmd_new)
     p = sub.add_parser("reference", help="list wall types, openings, finishes and catalogue items")
     p.set_defaults(func=cmd_reference)
