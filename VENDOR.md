@@ -26,6 +26,31 @@ It is only needed to regenerate upstream's API documentation. If you want it:
 git clone https://github.com/SketchUp/ruby-api-stubs.git vendor/supex/docgen/sketchup-api-stubs
 ```
 
+### Python dependencies: `supex-env/`
+
+Upstream ships no lockfile, and the v0.2.0 driver asks for `mcp[cli]>=1.3.0`
+with no upper bound. mcp 2.0.0 (July 2026) renamed `FastMCP` to `MCPServer`
+and left `mcp/server/fastmcp.py` as a stub that raises on import. An unpinned
+install therefore gets mcp 2, and the MCP server dies at startup with
+`ImportError: cannot import name 'fastmcp' from 'mcp.server'`. The stub's own
+error names the fix, but Python discards it because `server.py` imports the
+module as `from mcp.server import fastmcp`. The CLI never imports mcp, so
+`bin/supex` kept working.
+
+The harness runs the driver from `supex-env/` instead, a uv project outside
+the vendored tree. It installs `vendor/supex/driver` as an editable path
+dependency, constrains `mcp<2` (`constraint-dependencies`), and commits its
+`uv.lock`. `bin/mcp` and `bin/supex` export `UV_PROJECT=supex-env`, which
+redirects the plain `uv run` inside upstream's `mcp` and `supex` wrappers.
+`update-vendor.sh` only replaces `vendor/supex/`, so all of this survives a
+refresh.
+
+Upstream v0.3.0 (2026-09-07) already moved the driver to mcp 2
+(`mcp[cli]>=2.1.1,<3`). Its wrappers also call
+`uv run --project <driver>`, which overrides `UV_PROJECT`. Updating to v0.3.0
+or later means dropping the constraint and reworking `bin/mcp` and
+`bin/supex`, not just re-locking.
+
 ### Updating
 
 Run on a machine with network access:
@@ -37,7 +62,9 @@ Run on a machine with network access:
 
 Review the diff before committing — upstream is an early-stage project and its
 protocol and CLI surface are not yet stable. Check `README.md`'s setup steps
-still match after any update.
+still match after any update. Re-lock with `uv lock --project supex-env` and
+commit the lockfile with the update. If uv can't resolve `mcp`, the new driver
+has outgrown the constraint (see above).
 
 ### What the harness relies on
 
@@ -50,7 +77,14 @@ it changes:
   (parsed by `floorplan/sketchup.py`), and the CLI honours `SUPEX_TIMEOUT`.
 - The path policy allows `SUPEX_PROJECT_ROOT` (`runtime/src/supex_runtime/path_policy.rb`).
 - `runtime/.rubocop.yml` is the house style `.rubocop.yml` inherits.
+- The `mcp` and `supex` wrappers start the driver with a plain `uv run` from
+  `driver/`, with no `--project`, so `UV_PROJECT` moves them into `supex-env/`.
+  If that changes, they silently go back to an unpinned environment of their own.
 
 Running the vendored tools writes, but does not edit, files inside the tree:
-`driver/.venv/` and `driver/uv.lock` (uv) and `.tmp/` (SketchUp logs). All
-are git-ignored, and `update-vendor.sh` replaces them.
+`.tmp/` (the MCP server's log and SketchUp's console capture) and Python's
+`__pycache__/` directories. Both are git-ignored, and `update-vendor.sh`
+deletes them. uv puts the driver's environment in `supex-env/.venv/`, outside
+the tree. Checkouts set up before `supex-env/` existed also have
+`driver/.venv/` and `driver/uv.lock`, holding mcp 2. Nothing uses them now, and
+they can be deleted.

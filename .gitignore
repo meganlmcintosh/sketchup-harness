@@ -14,8 +14,8 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# Written by uv on the vendored driver's first run; upstream ships no lockfile,
-# and scripts/update-vendor.sh would delete it anyway.
+# Written by uv when the vendored driver is run directly, not through bin/
+# (whose lockfile is supex-env/uv.lock); scripts/update-vendor.sh deletes it.
 vendor/supex/driver/uv.lock
 
 # Harness scratch: SketchUp logs, screenshots

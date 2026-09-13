@@ -40,7 +40,10 @@ the harness:
 **Run the tools through `bin/`, never `vendor/supex/` directly.** The wrappers
 set `SUPEX_PROJECT_ROOT` to the repo root and put uv on PATH. Without the root,
 the runtime's path policy rejects every file operation outside `vendor/supex/`
-with error `-32002`. If you see that error, this is why.
+with error `-32002`. If you see that error, this is why. The wrappers also run
+the driver in `supex-env/`, which keeps mcp below 2. Run on its own,
+`vendor/supex/mcp` installs mcp 2 and the server exits with
+`cannot import name 'fastmcp'` (see `VENDOR.md`).
 
 **`vendor/supex/` is read-only.** It is vendored upstream code, pinned to a
 commit recorded in `vendor/.supex-commit`. Never edit it. If something there

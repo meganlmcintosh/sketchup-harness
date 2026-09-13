@@ -1,0 +1,20 @@
+[project]
+name = "supex-env"
+version = "0.1.0"
+description = "The locked environment bin/supex and bin/mcp run the vendored supex driver in"
+requires-python = ">=3.14"
+dependencies = [
+    "supex-driver",
+]
+
+[tool.uv]
+# Nothing to build: this project only pins the driver's dependencies.
+package = false
+# vendor/supex is v0.2.0, whose MCP server imports mcp.server.fastmcp. mcp 2
+# renamed FastMCP to MCPServer and left that module as a stub that raises, and
+# the driver asks only for mcp>=1.3.0, so an unpinned install can't start the
+# server. Upstream moved to mcp 2 in v0.3.0: drop this when vendoring that.
+constraint-dependencies = ["mcp<2"]
+
+[tool.uv.sources]
+supex-driver = { path = "../vendor/supex/driver", editable = true }
