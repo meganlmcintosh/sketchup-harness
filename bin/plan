@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Floor plan harness CLI. Specs live in projects/<name>/plan.yaml; see
+# docs/plan-spec.md.
+#
+#   ./bin/plan check    projects/example-townhouse
+#   ./bin/plan build    projects/example-townhouse
+#   ./bin/plan sketchup projects/example-townhouse   # needs ./bin/sketchup running
+#   ./bin/plan new      smith-house
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# uv installs to ~/.local/bin, which may not be on PATH.
+export PATH="$HOME/.local/bin:$PATH"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+exec uv run --quiet --project "$ROOT" python -m floorplan "$@"

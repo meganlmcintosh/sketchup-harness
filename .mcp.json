@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "supex": {
+      "command": "bin/mcp",
+      "args": []
+    }
+  }
+}

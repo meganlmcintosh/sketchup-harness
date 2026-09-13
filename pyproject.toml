@@ -1,0 +1,33 @@
+[project]
+name = "floorplan"
+version = "0.1.0"
+description = "Floor plan specs to DXF (2D drawings and 3D model) for SketchUp, via ezdxf"
+requires-python = ">=3.14"
+dependencies = [
+    "ezdxf>=1.4",
+    "matplotlib>=3.10",
+    "pyyaml>=6.0",
+    "shapely>=2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[tool.uv]
+# Run as `python -m floorplan` from the repo; nothing to build or publish.
+package = false
+
+[tool.ruff]
+line-length = 120  # matches the RuboCop limit upstream uses for the Ruby side
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Raised inside ezdxf itself by NumPy 2.5; nothing to fix on our side.
+filterwarnings = ["ignore:Setting the shape on a NumPy array:DeprecationWarning"]

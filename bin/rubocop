@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# RuboCop for the SketchUp-side Ruby (src/, plugin/), using the house style
+# upstream supex uses (see .rubocop.yml).
+#
+#   ./bin/rubocop            # lint
+#   ./bin/rubocop -a         # lint and apply safe fixes
+#
+# Runs on a Ruby installed with rv (https://github.com/spinel-coop/rv), not
+# macOS's Ruby 2.6, which is too old. RuboCop is pinned to 1.82.1 with
+# rubocop-ast 1.48.0: newer releases need a Prism parser that has to be
+# compiled, and this Mac has no compiler. See README.md for the install steps.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RUBY_HOME="${RUBOCOP_RUBY_HOME:-$HOME/.local/share/rv/rubies/ruby-3.4.10}"
+TOOLS="${RUBOCOP_GEM_HOME:-$HOME/.local/share/rv/tools/rubocop}"
+
+if [[ ! -x "$RUBY_HOME/bin/ruby" || ! -f "$TOOLS/bin/rubocop" ]]; then
+  echo "RuboCop isn't installed; see 'Ruby lint' in README.md." >&2
+  exit 1
+fi
+
+export GEM_HOME="$TOOLS"
+export GEM_PATH="$TOOLS:$("$RUBY_HOME/bin/ruby" -e 'print Gem.default_dir')"
+cd "$ROOT"
+exec "$RUBY_HOME/bin/ruby" "$TOOLS/bin/rubocop" "$@"

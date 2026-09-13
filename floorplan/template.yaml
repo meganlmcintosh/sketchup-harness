@@ -1,0 +1,27 @@
+# {{name}}
+# All bare numbers are millimetres; strings like "3.6 m" also work.
+# x runs east, y runs north. Put the origin at the building's south-west corner.
+# Reference: docs/plan-spec.md
+
+project:
+  name: {{name}}
+  address: ""
+  north: 0 # degrees clockwise from plan-up to true north
+
+storeys:
+  - name: Ground Floor
+    height: 2440
+    walls:
+      - id: EXT
+        type: brick_veneer
+        closed: true
+        align: outside # points trace the outside face
+        points: [[0, 0], [10000, 0], [10000, 8000], [0, 8000]]
+      - { id: MID, type: stud_internal, points: [[5000, 250], [5000, 7750]] }
+    rooms:
+      - { name: Living, at: [2500, 4000] }
+      - { name: Bed 1, at: [7500, 4000] }
+    openings:
+      - { type: entry_door, at: [2500, 0] }
+      - { type: door, at: [5000, 4000] }
+      - { type: window, at: [7500, 8000], width: 1810 }

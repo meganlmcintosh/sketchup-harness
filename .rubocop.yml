@@ -1,0 +1,12 @@
+# RuboCop for this repo's SketchUp-side Ruby. Run with ./bin/rubocop.
+#
+# Upstream supex's runtime style is the house style (CLAUDE.md); this only
+# narrows what is linted and targets the Ruby SketchUp 2026 bundles.
+inherit_from: vendor/supex/runtime/.rubocop.yml
+
+AllCops:
+  TargetRubyVersion: 3.2 # SketchUp 2026 bundles Ruby 3.2.2
+  Exclude:
+    - "vendor/**/*"
+    - ".tmp/**/*"
+    - "projects/**/*"

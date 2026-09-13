@@ -38,3 +38,19 @@ Run on a machine with network access:
 Review the diff before committing — upstream is an early-stage project and its
 protocol and CLI surface are not yet stable. Check `README.md`'s setup steps
 still match after any update.
+
+### What the harness relies on
+
+Check these still hold after an update; each one breaks something quietly if
+it changes:
+
+- `runtime/src/injector.rb` loads the runtime (used by `bin/sketchup` and the
+  `plugin/` loader), and the runtime autostarts its bridge on a `UI.start_timer`.
+- `supex eval-file --raw` prints one JSON object with `success` and `result`
+  (parsed by `floorplan/sketchup.py`), and the CLI honours `SUPEX_TIMEOUT`.
+- The path policy allows `SUPEX_PROJECT_ROOT` (`runtime/src/supex_runtime/path_policy.rb`).
+- `runtime/.rubocop.yml` is the house style `.rubocop.yml` inherits.
+
+Running the vendored tools writes, but does not edit, files inside the tree:
+`driver/.venv/` and `driver/uv.lock` (uv) and `.tmp/` (SketchUp logs). All
+are git-ignored, and `update-vendor.sh` replaces them.

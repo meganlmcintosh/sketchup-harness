@@ -1,18 +1,117 @@
 #!/usr/bin/env bash
-# Launch SketchUp with the bridge extension, scoped to THIS repo.
+# Launch SketchUp 2026 with the supex bridge, scoped to THIS repo.
 #
-# Why this wrapper exists: the runtime enforces path restrictions inside
-# SketchUp (vendor/supex/runtime/src/supex_runtime/path_policy.rb). File
-# operations -- eval_ruby_file, open_model, save_model, take_screenshot -- are
-# refused with error -32002 for anything outside SUPEX_PROJECT_ROOT. Because
-# supex is vendored under vendor/supex/, its own idea of "project root" is that
-# subdirectory, so src/ and models/ would be off limits.
+#   ./bin/sketchup                        # start SketchUp in a blank model, wait for the bridge
+#   ./bin/sketchup models/your-model.skp  # ...or in a model of your choice
 #
-# SketchUp is started via `open`, which goes through LaunchServices and does not
-# inherit this shell's environment, so the value is registered with launchd.
+# Where the bridge comes from: if bin/install-bridge has put the loader in
+# SketchUp's Plugins folder (pointing at this checkout), SketchUp loads the
+# bridge itself however it is opened. Otherwise this script passes
+# -RubyStartup to load the supex injector, and SketchUp opened from the Dock
+# or Finder has no bridge.
 #
-#   ./bin/sketchup models/your-model.skp
+# The bridge starts on a timer that doesn't run while the Welcome window is
+# up, so with no model given this opens a fresh copy of SketchUp's blank
+# "Simple" template (.tmp/sketchup/blank.skp) instead. bin/plan treats that
+# copy like a new untitled model and saves the import under the project.
+#
+# Why this doesn't just call vendor/supex/scripts/launch-sketchup.sh:
+#
+# - Path policy. Inside SketchUp, the runtime refuses file operations
+#   (eval_ruby_file, open_model, save_model, take_screenshot) outside
+#   SUPEX_PROJECT_ROOT with error -32002. That variable has to be in
+#   SketchUp's own environment; the CLI's environment doesn't matter.
+#   SketchUp starts via `open`, which goes through LaunchServices and does not
+#   inherit this shell's environment, so the value is registered with launchd
+#   (the plugin loader sets it too).
+#
+# - Version pinning. Upstream runs `open -a SketchUp`, letting LaunchServices
+#   pick any installed copy. With several SketchUp installs it picks the wrong
+#   one; supex needs 2026 (Ruby 3.2). Override with SKETCHUP_APP=/path/to/app.
+#
+# Logs: SketchUp's stdout/stderr go to .tmp/sketchup/. The runtime writes its
+# console capture to vendor/supex/.tmp/sketchup_console.log (fixed upstream).
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+APP="${SKETCHUP_APP:-/Applications/SketchUp 2026/SketchUp.app}"
+INJECTOR="$ROOT/vendor/supex/runtime/src/injector.rb"
+LOG_DIR="$ROOT/.tmp/sketchup"
+BLANK="$LOG_DIR/blank.skp"
+PORT="${SUPEX_PORT:-9876}"
+WAIT_SECONDS="${SKETCHUP_WAIT:-120}"
+
+bridge_up() { nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; }
+
+# Whoever answers on the port must be a SketchUp 2026 running with THIS repo
+# as its root; SketchUp 2024, another checkout, or upstream's launcher all
+# listen on the same port.
+bridge_is_ours() {
+  local answer
+  answer="$("$ROOT/bin/supex" eval --raw "ENV['SUPEX_PROJECT_ROOT'].to_s + '|' + Sketchup.version" 2>/dev/null || true)"
+  [[ "$answer" == *"$ROOT|26."* ]]
+}
+
+if [[ ! -d "$APP" ]]; then
+  echo "SketchUp not found at: $APP (set SKETCHUP_APP to override)" >&2
+  exit 1
+fi
+
+if bridge_up; then
+  if bridge_is_ours; then
+    echo "Bridge already listening on port $PORT."
+    exit 0
+  fi
+  echo "Something else is listening on port $PORT (another SketchUp, or a bridge for a different repo)." >&2
+  echo "Quit it, then rerun." >&2
+  exit 1
+fi
+
+# Any copy of the same version shares a bundle ID, so `open` would just bring
+# the running one forward and silently skip the bridge.
+VERSION_DIR="$(basename "$(dirname "$APP")")"
+if ps -axo command | grep -F "$VERSION_DIR/SketchUp.app/Contents/MacOS/SketchUp" | grep -qv grep; then
+  echo "$VERSION_DIR is running without the bridge. Save and quit it, then rerun." >&2
+  echo "(If bin/install-bridge is installed, the bridge starts once a model window is open.)" >&2
+  exit 1
+fi
+
+mkdir -p "$LOG_DIR"
+if [[ $# -gt 0 ]]; then
+  if [[ ! -f "$1" ]]; then
+    echo "Model file not found: $1" >&2
+    exit 1
+  fi
+  MODEL="$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
+else
+  TEMPLATE="$APP/Contents/Resources/en-US/Templates/Temp01b - Simple.skp"
+  if [[ ! -f "$TEMPLATE" ]]; then
+    TEMPLATE="$(find "$APP/Contents/Resources" -path '*Templates*' -name '*Simple*.skp' | head -1 || true)"
+  fi
+  if [[ -z "$TEMPLATE" || ! -f "$TEMPLATE" ]]; then
+    echo "Couldn't find SketchUp's blank template inside $APP; pass a .skp to open instead." >&2
+    exit 1
+  fi
+  cp "$TEMPLATE" "$BLANK"
+  MODEL="$BLANK"
+fi
+
 launchctl setenv SUPEX_PROJECT_ROOT "$ROOT"
-exec "$ROOT/vendor/supex/scripts/launch-sketchup.sh" "$@"
+args=(--stdout "$LOG_DIR/stdout.txt" --stderr "$LOG_DIR/stderr.txt" "$MODEL" -a "$APP")
+ROOT_FILE="$HOME/Library/Application Support/$VERSION_DIR/SketchUp/Plugins/sketchup_harness_bridge.root"
+if [[ -f "$ROOT_FILE" && "$(cat "$ROOT_FILE")" == "$ROOT" ]]; then
+  open "${args[@]}"
+else
+  open "${args[@]}" --args -RubyStartup "$INJECTOR"
+fi
+
+echo "Starting $VERSION_DIR; waiting up to ${WAIT_SECONDS}s for the bridge on port $PORT..."
+for ((i = 0; i < WAIT_SECONDS; i++)); do
+  if bridge_up; then
+    echo "Bridge is up. Check it with: ./bin/supex status"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "Bridge did not come up. See $LOG_DIR/stderr.txt and SketchUp's Ruby Console." >&2
+exit 1

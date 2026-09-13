@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Install (or remove) a loader that starts the supex bridge whenever SketchUp
+# opens, however it is opened. Without it, only ./bin/sketchup loads the bridge.
+#
+#   ./bin/install-bridge               # SketchUp 2026
+#   ./bin/install-bridge --uninstall
+#   SKETCHUP_VERSION=2025 ./bin/install-bridge
+#
+# Trade-off: while SketchUp is open, any program on this Mac can send Ruby to
+# the bridge's localhost port. See plugin/sketchup_harness_bridge.rb.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+VERSION="${SKETCHUP_VERSION:-2026}"
+PLUGINS="$HOME/Library/Application Support/SketchUp $VERSION/SketchUp/Plugins"
+LOADER="$PLUGINS/sketchup_harness_bridge.rb"
+ROOT_FILE="$PLUGINS/sketchup_harness_bridge.root"
+
+if [[ "${1:-}" == "--uninstall" ]]; then
+  rm -f "$LOADER" "$ROOT_FILE"
+  echo "Removed the loader from $PLUGINS. The bridge now loads only via ./bin/sketchup."
+  exit 0
+fi
+
+if [[ ! -d "$PLUGINS" ]]; then
+  echo "No Plugins folder at: $PLUGINS" >&2
+  echo "Open SketchUp $VERSION once so it creates it, then rerun." >&2
+  exit 1
+fi
+
+# The repo path goes in a sidecar file, not into the Ruby source, so any
+# characters in the path are safe.
+cp "$ROOT/plugin/sketchup_harness_bridge.rb" "$LOADER"
+printf '%s\n' "$ROOT" > "$ROOT_FILE"
+echo "Installed $LOADER (bridge root: $ROOT)"
+echo "The bridge starts next time SketchUp opens a model."

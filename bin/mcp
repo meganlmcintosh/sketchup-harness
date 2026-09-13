@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# MCP driver, scoped to this repo. Register with:
-#   claude mcp add supex -- "$(pwd)/bin/mcp"
+# MCP driver for this repo. Registered for Claude Code in .mcp.json.
+# SketchUp must be running via ./bin/sketchup (or with the loader from
+# bin/install-bridge) for the tools to connect; that launch, not this
+# script's environment, decides the runtime's path policy.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 export SUPEX_PROJECT_ROOT="$ROOT"
+# uv installs to ~/.local/bin, and MCP hosts often start servers without the
+# login shell's PATH.
+export PATH="$HOME/.local/bin:$PATH"
 exec "$ROOT/vendor/supex/mcp" "$@"

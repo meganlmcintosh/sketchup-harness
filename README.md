@@ -1,114 +1,179 @@
 # sketchup-harness
 
-A Claude Code harness for working on SketchUp files — describe a change in natural
-language, and have Claude write and execute SketchUp Ruby against the live model.
+A Claude Code harness for floor plans. Give Claude a written brief, measured
+dimensions, or a photo or PDF of a plan (or a mix). It writes the plan as a
+small YAML file, generates 2D and 3D DXF files with
+[ezdxf](https://ezdxf.readthedocs.io), renders dimensioned PDF sheets, and
+builds a furnished, multi-storey model in a running SketchUp to check.
+
+Australian conventions and metric units by default.
 
 ## How it works
 
-SketchUp's `.skp` format is proprietary and there is no practical way to author one
-from outside the application. So the harness drives a *running* SketchUp instead:
-
 ```
-┌──────────────┐      ┌──────────────────┐      ┌────────────────────┐
-│ Claude Code  │─────▶│  Python driver   │─────▶│ SketchUp + Ruby    │
-│  (macOS)     │  MCP │  (MCP server)    │ TCP  │ bridge extension   │
-└──────────────┘      └──────────────────┘      └────────────────────┘
-                             JSON-RPC 2.0 over localhost:9876
+ brief / survey / photo / PDF
+            │  Claude (the floor-plan skill)
+            ▼
+ projects/<name>/plan.yaml          walls, openings, rooms, stairs, furniture, roof
+            │  ./bin/plan build     (Python: floorplan/, ezdxf, shapely, matplotlib)
+            ▼
+ out/model.dxf                      3D: storeys, doors and windows, stairs, furniture, roof
+ out/plan-<storey>.dxf|pdf|png      2D drafting at 1:100 on A3, plus a roof plan
+ out/sketchup.json                  what DXF can't carry: names, labels, dimensions, glass
+            │  ./bin/plan sketchup  (src/floorplan_import.rb via the supex bridge)
+            ▼
+ SketchUp: tagged components, flat plans with labels and dimensions,
+           scenes per storey, out/<name>.skp and out/views/*.png
 ```
 
-A Ruby extension loaded inside SketchUp listens on a localhost socket. A Python MCP
-server outside it exposes tools to Claude Code. Claude sends Ruby, the extension
-evaluates it against the active model, and geometry appears in the open document.
-
-The part that makes this usable rather than blind is the return path: the bridge
-sends back model statistics, entity listings and **screenshots**, so Claude can see
-what it built and correct itself without you relaying every result by hand.
+SketchUp's `.skp` format can't practically be written from outside the app,
+but SketchUp Pro (including education licences) imports DXF. The harness
+generates DXF, then drives a *running* SketchUp to import it and repair what
+the importer loses. A Ruby extension inside SketchUp listens on a localhost
+socket; Python tools outside send it Ruby to run.
+[supex](https://github.com/darwin/supex) provides that bridge, and its return
+path (model stats, screenshots) lets Claude check its own work.
 
 ## Layout
 
-| Path            | What it is                                                       |
-| --------------- | ---------------------------------------------------------------- |
-| `vendor/supex/` | Upstream [supex](https://github.com/darwin/supex), unmodified. The bridge itself. |
-| `bin/`          | Repo-scoped wrappers around the vendored tools. Use these, not `vendor/supex/` directly. |
-| `src/`          | Our own Ruby scripts — the modelling logic specific to this project. |
-| `models/`       | `.skp` files under version control.                              |
-| `scripts/`      | Project automation, including vendor refresh.                    |
-| `CLAUDE.md`     | Conventions Claude Code follows when working in this repo.       |
-
-We vendor supex rather than fork it: upstream is a general-purpose bridge and
-improves independently, while this repo holds the design work. See `VENDOR.md`
-for the pinned commit and how to update it.
+| Path | What it is |
+| ---- | ---------- |
+| `projects/<name>/` | One folder per plan: `plan.yaml`, `sources/` (briefs, photos), `out/` (generated, not committed) |
+| `floorplan/` | The generator (Python): spec, geometry kernel, 2D/3D DXF, sheets, stairs, roofs, furniture catalogue |
+| `src/` | Ruby run inside SketchUp through the bridge: the import and its target check |
+| `plugin/` | The SketchUp loader installed by `bin/install-bridge` |
+| `docs/plan-spec.md` | The `plan.yaml` reference |
+| `.claude/skills/floor-plan/` | How Claude turns briefs, surveys and images into plans |
+| `tests/` | pytest suite, including watertightness checks on all generated solids |
+| `bin/` | Entry points: `plan`, `sketchup`, `supex`, `mcp`, `install-bridge`, `rubocop` |
+| `vendor/supex/` | Upstream supex, unmodified (see `VENDOR.md`) |
+| `models/` | Hand-made `.skp` files under version control |
 
 ## Requirements
 
-Everything below runs on the Mac, natively — not in a container.
+- **macOS** and **SketchUp 2026** with CAD import (Pro, Studio or an education
+  licence). The bridge is only tested on 2026, which bundles Ruby 3.2.2.
+- **Claude Code**.
+- **uv**, which installs Python 3.14 and all Python packages.
+- Optional, for linting the Ruby: **rv** with Ruby 3.4 and RuboCop (below).
 
-- **macOS** — the only platform upstream tests
-- **SketchUp 2026** — the only version upstream tests; it bundles Ruby 3.2.2
-- **Claude Code** — installed and running on that Mac
-- **Python 3.14+** — for the MCP driver, managed via `uv`
-- **Ruby 3.2.2** — matching SketchUp's bundled interpreter
+Nothing needs Homebrew or Xcode's command line tools, though git does.
 
 ## Setup
 
-Everything runs on the Mac. From this repo's root:
+From this repo's root:
 
 ```bash
-# 1. Toolchain (once). Upstream pins Python 3.14 and Ruby 3.2.2 via mise.
-brew install mise jq
-mise install
+# 1. uv (user-level, leaves your shell config alone), then Python and packages.
+curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+~/.local/bin/uv sync
+~/.local/bin/uv sync --project vendor/supex/driver
 
-# 2. Launch SketchUp with the bridge extension deployed into it.
-./bin/sketchup models/your-model.skp
+# 2. Optional: start the bridge however SketchUp is opened (Dock, Finder...).
+./bin/install-bridge
 
-# 3. In a second terminal, register the bridge with Claude Code.
-claude mcp add supex -- "$(pwd)/bin/mcp"
+# 3. Start SketchUp 2026 with the bridge, straight into a blank model.
+./bin/sketchup
 
-# 4. Confirm the connection.
+# 4. Check the connection.
 ./bin/supex status
 ```
 
-Step 4 should report the socket state and the SketchUp version it is talking to.
-If it can't connect, SketchUp isn't running with the extension loaded — rerun
-step 2 and check SketchUp's own Ruby Console for load errors.
+`bin/sketchup` launches `/Applications/SketchUp 2026` explicitly
+(`SKETCHUP_APP` overrides it) because `open -a SketchUp` picks an arbitrary copy
+when several are installed. It opens a copy of the blank template because the
+bridge can't start while the Welcome window is showing.
 
-### Always use `bin/`, not `vendor/supex/` directly
+**About `bin/install-bridge`.** It copies `plugin/sketchup_harness_bridge.rb`
+into SketchUp's Plugins folder, with a sidecar file holding this repo's path,
+so the bridge starts with every SketchUp session. The trade-off: while
+SketchUp is open, any program on this Mac can send it Ruby through the
+localhost port (the REPL server supex would also open is switched off).
+Remove it with `./bin/install-bridge --uninstall`; rerun it if you move the
+repo.
 
-The three scripts in `bin/` are thin wrappers that set `SUPEX_PROJECT_ROOT` to
-this repo before delegating to the vendored tools. Without it the runtime's path
-policy refuses to touch anything outside `vendor/supex/`, and every
-`eval_ruby_file src/...` or `open_model models/...` fails with error `-32002,
-path access denied`. Calling the vendored scripts directly is the most likely
-cause of that error.
+**MCP tools for Claude Code.** `.mcp.json` registers the supex MCP server
+(`bin/mcp`) for this project; Claude Code asks to approve it on the next
+session. The `bin/plan sketchup` workflow uses the CLI and works without it.
 
-`bin/sketchup` registers the value with `launchctl` rather than exporting it,
-because SketchUp is started through `open`, which does not inherit the shell
-environment. If path errors persist, check what SketchUp actually received:
+### Path errors (`-32002`)
+
+Inside SketchUp, the runtime refuses file operations (`eval_ruby_file`,
+`open_model`, `save_model`, `take_screenshot`) outside `SUPEX_PROJECT_ROOT`.
+That variable has to be in **SketchUp's** environment: `bin/sketchup`
+registers it with launchd before launching, and the plugin loader sets it
+from its sidecar file. The CLI's own environment makes no difference, so
+`vendor/supex/supex` and `bin/supex` behave the same. If you see
+`-32002, path access denied`, SketchUp was started some other way; quit it
+and use `./bin/sketchup`, or check what it was given:
 
 ```bash
 launchctl getenv SUPEX_PROJECT_ROOT
 ```
 
-## Working with it
+## Using it
 
-Once connected, you talk to Claude Code normally. It has tools to evaluate Ruby
-inline or from a file in `src/`, inspect the model, and screenshot the viewport.
+Talk to Claude Code: "draw a single-storey three-bedroom house for a 15 m lot,
+living to the north", "trace this plan" (with a photo), "the kitchen is
+4.2 by 3.6", "add a double garage with a skillion roof", "furnish it". Claude
+writes `plan.yaml` and runs the commands. You can run them yourself too:
 
-Two habits make the difference:
+```bash
+./bin/plan new smith-house                  # start a project
+./bin/plan check projects/smith-house       # validate; rooms and areas
+./bin/plan build projects/smith-house       # DXFs, PDF and PNG sheets
+./bin/plan sketchup projects/smith-house    # build and import into SketchUp
+./bin/plan reference                        # wall types, openings, finishes, furniture
+```
 
-**Keep the geometry in scripts, not in chat.** Ask for changes as edits to files
-in `src/` rather than one-off evaluated snippets. The scripts are the artefact —
-they're reviewable, re-runnable, and diffable. A model rebuilt from a script is
-reproducible; a model built from forty ad-hoc snippets is not.
+Try the example: `./bin/plan sketchup projects/example-townhouse`, a furnished
+two-storey townhouse with a stair and a hip roof.
 
-**Let it look before it commits.** Screenshots are cheap and Claude corrects far
-better from a picture than from a description. Say "check it" and it will.
+Re-running `bin/plan sketchup` replaces that project's previous import and
+saves the model to `projects/<name>/out/<name>.skp`. Anything you draw by
+hand in that model stays: the import only touches its own components, tags
+and scenes, and it refuses to save over an existing `.skp` from a blank
+window. Scenes cover the whole house, each storey with the floors above
+removed, and each storey's flat plan. An import is three undo steps (the
+removal, the DXF imports, the repairs) because SketchUp's importer closes
+Ruby operations; if a run fails part way, its own entities are erased again.
 
-Direct modelling in SketchUp's GUI is still the better tool for sketching and
-quick adjustment. The harness earns its keep on the repetitive, the parametric,
-and the fiddly-but-precise.
+Walls can run at any angle; roofs cover L-, T- and U-shaped plans at any
+rotation. Plans are concept designs: sizes and stair checks follow common
+Australian practice, not a certifier's review.
+
+## Development
+
+```bash
+PYTHONPATH=. uv run pytest              # tests, including watertightness sweeps at odd angles
+uv run ruff check floorplan tests       # Python lint
+./bin/rubocop                           # Ruby lint (src/, plugin/)
+```
+
+The geometry kernel builds every solid from one snap-rounded planar
+arrangement, so faces share their edges exactly; `CLAUDE.md` records the GEOS
+behaviours that approach has to work around. When touching it, keep
+`tests/test_robustness.py` passing.
+
+### Ruby lint
+
+macOS's Ruby 2.6 is too old for RuboCop, and building a newer Ruby needs a
+compiler. rv installs a prebuilt Ruby instead. RuboCop is pinned to 1.82.1 with
+rubocop-ast 1.48.0 because newer releases need a Prism version that must be
+compiled:
+
+```bash
+curl -LsSf https://rv.dev/install -o /tmp/rv-install.sh && RV_NO_MODIFY_PATH=1 sh /tmp/rv-install.sh
+rv ruby install 3.4.10
+RUBY_HOME=~/.local/share/rv/rubies/ruby-3.4.10
+export GEM_HOME=~/.local/share/rv/tools/rubocop GEM_PATH=~/.local/share/rv/tools/rubocop:$($RUBY_HOME/bin/ruby -e 'print Gem.default_dir')
+$RUBY_HOME/bin/gem install rubocop-ast -v 1.48.0 --minimal-deps --no-document --source https://rubygems.org/
+$RUBY_HOME/bin/gem install rubocop -v 1.82.1 --minimal-deps --no-document --source https://rubygems.org/
+```
+
+The rv installer may put `rv` in `~/.local/bin/bin`; move it to `~/.local/bin`.
 
 ## Licence
 
-MIT — see `LICENSE`. Vendored upstream code is MIT and separately attributed in
+MIT; see `LICENSE`. Vendored upstream code is MIT and separately attributed in
 `NOTICE`.

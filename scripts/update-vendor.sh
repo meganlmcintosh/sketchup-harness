@@ -35,5 +35,6 @@ echo
 echo "Next:"
 echo "  1. Update the pinned commit and date in VENDOR.md and NOTICE."
 echo "  2. Review the diff — upstream's protocol and CLI are not yet stable."
-echo "  3. Re-check the setup steps in README.md still match."
-echo "  4. Reconnect and run: ./vendor/supex/supex status"
+echo "  3. Re-check the setup steps in README.md still match, and re-run ./bin/install-bridge if you use it."
+echo "  4. Reconnect and run: ./bin/supex status"
+echo "  5. Re-run ./bin/plan sketchup projects/example-townhouse and check out/views/*.png."

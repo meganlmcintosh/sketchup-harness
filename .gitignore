@@ -6,11 +6,23 @@
 ~*.skp
 AutoSave_*.skp
 
-# Python (supex driver)
+# Python
 __pycache__/
 *.py[cod]
 .venv/
 .uv/
+.pytest_cache/
+.ruff_cache/
+
+# Written by uv on the vendored driver's first run; upstream ships no lockfile,
+# and scripts/update-vendor.sh would delete it anyway.
+vendor/supex/driver/uv.lock
+
+# Harness scratch: SketchUp logs, screenshots
+.tmp/
+
+# Generated from each project's plan.yaml; rebuild with ./bin/plan build
+projects/*/out/
 
 # Ruby
 .bundle/
