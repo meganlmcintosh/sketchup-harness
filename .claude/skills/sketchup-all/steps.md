@@ -89,3 +89,11 @@ Pass on any warnings in plain words. If SketchUp was used, the house is open
 there and saved as `<house>/out/<folder name>.skp`. The scene tabs along the
 top of its window switch views: "3D" is the outside, "<Storey> - 3D" the
 inside with the roof off, and "<Storey> - Plan" the plan.
+
+## 5. Save
+
+Redrawing can leave `out/` changed even when nobody touched the plan (a
+harness update, a stale render). Follow CLAUDE.md's rule on diagram
+projects: if `plan.yaml` lives outside this repo, commit those changes
+yourself, straight to its main branch — never a PR. Leave `example-townhouse`
+uncommitted; it belongs in whatever harness PR is already in progress.

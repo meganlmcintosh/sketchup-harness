@@ -123,3 +123,13 @@ Give the user the sheet PDFs and PNGs (and the .skp path), the room
 schedule with areas, every assumption and guess, and any warnings left.
 Plans are concept designs: say so when it matters, and don't present rules
 of thumb as NCC compliance.
+
+## 7. Save
+
+Follow CLAUDE.md's rule on diagram projects: if `plan.yaml` lives outside
+this repo, commit the changed `plan.yaml` and `out/` there yourself,
+straight to its main branch, judging (or asking, with a decision card, if
+it's a close call) whether this is an update to the existing project or a
+new sibling version. Never open a PR for those commits. If the plan lives
+in this repo's own `projects/` instead, leave it uncommitted for the user's
+own harness PR.
