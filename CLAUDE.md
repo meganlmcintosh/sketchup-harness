@@ -55,6 +55,43 @@ refresh silently discards local edits.
 generated DXF, PDF or SKP files; change the plan or the generator and rebuild.
 A model must be reproducible by rebuilding.
 
+**Diagram projects commit straight to their own repo's default branch —
+never a PR.** Tell these apart by the project's git root: if `plan.yaml`
+sits in a different git repository from this harness (a private plans repo
+such as `sketchup-harness-diagrams`), its `plan.yaml` and `out/` are the
+user's design work, not harness code, and the harness's PR discipline
+doesn't apply to them. After a rebuild leaves changes there (from the
+`floor-plan` skill or a `sketchup-*` redraw):
+
+- Commit them yourself, directly to that repo's default branch, with a
+  plain-language message describing what changed in the design (not
+  "regenerate outputs"). No branch, no PR, no asking them to review a diff
+  of DXF/PNG binaries.
+- First judge whether this revision is a tweak to the existing design or a
+  distinct alternative worth keeping side by side. Language cues count too:
+  "what if", "try a version where", "compare", "keep the old one too" all
+  mean a new version, same as a reshuffled layout or an added/removed
+  storey. A dimension fix, a moved item, a finish, a clearance correction,
+  or fixing something that was simply wrong is an update.
+  - Clear update: commit into the project's existing folder, replacing
+    `plan.yaml` and `out/`.
+  - Clear new alternative: create a sibling folder, `<project>-<what's
+    different>` — a short descriptive suffix, not `-v2`, matching the
+    existing `58-penrose-promenade-tarneit` /
+    `58-penrose-promenade-tarneit-open-plan` precedent — and commit the new
+    plan and its `out/` there, leaving the original untouched.
+  - Ambiguous: ask, with a two-option decision card (`AskUserQuestion`) —
+    "Update `<project>`" vs "Save as a new version,
+    `<project>-<suggested-suffix>`" — rather than guessing either way.
+- If `plan.yaml` is inside this repo instead (the `example-townhouse`
+  example, say), leave the changes for the user to include in whatever
+  harness PR is already in progress; don't commit on their behalf.
+
+Changes to the harness itself (`floorplan/`, `src/`, `plugin/`, `vendor/`,
+docs, this file — anything inside this repo) always go through a feature
+branch and pull request as normal; this rule is only about generated
+diagrams living in someone else's repo, and never shortcuts harness review.
+
 **Geometry comes from committed code.** Modelling logic lives in `floorplan/`
 (Python); what runs inside SketchUp lives in `src/` (Ruby) and is run with
 `eval_ruby_file`/`bin/supex eval-file`. Inline `eval_ruby` is for probing and
